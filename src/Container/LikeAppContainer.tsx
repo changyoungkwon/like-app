@@ -10,17 +10,17 @@ export enum Answer { UNANSWERED, LIKE, DISLIKE }
 interface LikeAppState {
   author : string;
   userName : string;
-  userAnswerList : Answer[];
+  userAnswers : Answer[];
   progress : Progress;
-  questionIndex : number;
+  qIndex : number;
 }
 
 export default class LikeAppContainer extends React.Component<any, LikeAppState> {
-  authorAnswerSheet:[string, Answer][];
+  authorQAs:[string, Answer][];
   constructor(props:any){
     super(props);
     const jeongminQAs = jeongminAnswerSheet.qas as any;
-    this.authorAnswerSheet = jeongminQAs.map((qa:{subject:string, choice:string}) => {
+    this.authorQAs = jeongminQAs.map((qa:{subject:string, choice:string}) => {
       const choice:string = qa.choice;
       if(choice === 'like') {
         return [qa.subject, Answer.LIKE];
@@ -33,61 +33,72 @@ export default class LikeAppContainer extends React.Component<any, LikeAppState>
     this.state = {
       author : jeongminAnswerSheet.author as string,
       userName : '',
-      userAnswerList : [],
+      userAnswers : [],
       progress : Progress.INPUT_NAME,
-      questionIndex : 0,
+      qIndex : 0,
     };
   }
+
   setUserName = (name:string) : void => {
     this.setState({
       userName: name,
       progress : Progress.QUESTION,
     });
   }
+
   appendUserAnswer = (ans:Answer) : void => {
     this.setState((prev:LikeAppState) => {
-      const newAnswerList = prev.userAnswerList.slice(0);
-      newAnswerList.push(ans);
-      const questionIndex = prev.questionIndex + 1;
-      if( questionIndex >= this.authorAnswerSheet.length ){
-        return {
-          questionIndex,
-          userAnswerList : newAnswerList,
-          progress : Progress.RESULT,
-        };
-      }
+      const userAnswers = prev.userAnswers.slice(0);
+      const qIndex = prev.qIndex + 1;
+      const progress = (qIndex >= this.authorQAs.length) ? Progress.RESULT : Progress.QUESTION;
+      userAnswers.push(ans);
       return {
-        questionIndex,
-        userAnswerList : newAnswerList,
-        progress : Progress.QUESTION,
+        qIndex,
+        userAnswers,
+        progress,
       };
     });
   }
 
-  clearState = () => {
+  resetState = () => {
     this.setState({
       userName : '',
-      userAnswerList : [],
+      userAnswers : [],
       progress : Progress.INPUT_NAME,
-      questionIndex : 0,
+      qIndex : 0,
     });
   }
+
   render() : React.ReactElement<any> {
     switch(this.state.progress){
       case Progress.INPUT_NAME:
-        return <InputName author={this.state.author} setUserName={this.setUserName}></InputName>;
+        return <InputName 
+                author={this.state.author}
+                setUserName={this.setUserName}>
+               </InputName>;
+
       case Progress.QUESTION :
-        const question:string = this.authorAnswerSheet[this.state.questionIndex][0];
-        return <Question author={this.state.author} question={question}
-                appendUserAnswer={this.appendUserAnswer}
-                qprogress={(this.state.questionIndex+1) + "/" + this.authorAnswerSheet.length} ></Question>;
+        const question:string = this.authorQAs[this.state.qIndex][0];
+        const qprogress:string = `${this.state.qIndex}/${this.authorQAs.length}`;
+        return <Question
+                author={this.state.author}
+                question={question}
+                qprogress={qprogress}
+                appendUserAnswer={this.appendUserAnswer}>
+               </Question>;
+
       case Progress.RESULT :
-        const compareList:boolean[] = this.state.userAnswerList.map((ans, index) => {
-          return ans === this.authorAnswerSheet[index][1];
-        });
-        return <Result author={this.state.author} authorAnswerSheet={this.authorAnswerSheet}
-                userName={this.state.userName}  userAnswerList={this.state.userAnswerList}
-                compareList={compareList} initialize={this.clearState} ></Result>;
+        const authorQuestions:string[] = this.authorQAs.map(qa => qa[0]);
+        const matches:boolean[] = this.state.userAnswers.map((ans, index) =>
+          ans === this.authorQAs[index][1]
+        );
+        return <Result 
+                author={this.state.author}
+                authorQuestions={authorQuestions}
+                userName={this.state.userName}
+                matches ={matches}
+                reset={this.resetState} >
+                </Result>;
     }
   }
 }
