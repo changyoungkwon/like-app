@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "outDir": "dist/", 
+    "strictNullChecks": true, 
+    "noImplicitAny": true,
+    "moduleResolution": "node", 
+    "target": "es5",
+    "jsx": "react",
+    "sourcMap": "true
+  },
+  "include": [
+    "src/"
+  ]
+}
